@@ -12,6 +12,9 @@ class spring_damp_mass():
         self.k = K 
         self.b = B
         self.mass = mass
+        self.delta_mass = delta_mass
+        self.delta_K = delta_K  
+        self.delta_B = delta_B
         self.actual_mass = self.mass + delta_mass 
         self.actual_k = self.k + delta_K 
         self.actual_b = self.b + delta_B  
@@ -52,26 +55,51 @@ class spring_damp_mass():
 
     def ideal_diff(self, state, t):
         dx1dt = state[1] 
-        dx2dt = state[2]
-        #(1/self.mass)*( self.force_time(t) - (self.b*state[1]) - (self.k * state[0]) )
-        dx3dt = (1/self.mass)*(self.diff_force_time(t) - (self.b*state[2]) - (self.k * state[1]) )
-        dxdt = [dx1dt, dx2dt, dx3dt] 
+        dx2dt =  (1/self.mass)*(self.force_time(t) - (self.b*state[1]) - (self.k * state[0]) )
+        dxdt = [dx1dt, dx2dt ]
         return dxdt
 
     def ideal_values(self):
         return odeint(self.ideal_diff, self.state_vec, self.t)
     
+    def ideal_acc(self):
+        ideal_acc_list = []
+        z = self.ideal_values()
+        for i in range(len(self.t)):
+            t = self.t[i] 
+            acc = (i/self.mass) * ( self.force_time(t) - (self.b*z[i,1]) - (self.k * z[i,0]) ) 
+            ideal_acc_list.append(acc)
+        return ideal_acc_list
+
     def actual_diff(self, state, t):
         dx1dt = state[1] 
-        dx2dt = state[2]
-        #(1/self.mass)*( self.force_time(t) - (self.b*state[1]) - (self.k * state[0]) )
-        dx3dt = (1/self.actual_mass)*(self.diff_force_time(t) - (self.actual_b*state[2]) - (self.actual_k * state[1]) )
-        dxdt = [dx1dt, dx2dt, dx3dt] 
+        dx2dt = (1/self.actual_mass)*(self.force_time(t) - (self.actual_b*state[1]) - (self.actual_k*state[0]) )
+        dxdt = [dx1dt, dx2dt] 
         return dxdt
 
     def actual_values(self):
         return odeint(self.actual_diff, self.state_vec, self.t)
-        
+    
+    def actual_acc(self):
+        actual_acc_list = []
+        z = self.actual_values()
+        for i in range(len(self.t)):
+            t = self.t[i] 
+            acc = (i/self.actual_mass) * ( self.force_time(t) - (self.actual_b*z[i,1]) - (self.actual_k*z[i,0]) ) 
+            actual_acc_list.append(acc)
+        return actual_acc_list
+    
+    def error_equation(self): 
+        z = self.actual_values()
+        z1 = list(z[:,0])
+        z2 = list(z[:,1])
+        z3 = self.actual_acc()
+        error = []
+        for i in range(len(self.t)):
+            e = (self.delta_mass * z3[i]) + (self.delta_B * z2[i]) + (self.delta_K * z1[i])
+            error.append(e) 
+        return error 
+    
     def force_graph(self):
         for i in range(len(self.t)):
             self.force_list.append(self.force_time(self.t[i]))
@@ -86,7 +114,7 @@ class spring_damp_mass():
         z = self.ideal_values()
         disp = z[:, 0]
         vel = z[:, 1]
-        acc = z[:, 2]
+        acc = self.ideal_acc() 
         plt.plot(self.t, disp)
         plt.plot(self.t, vel)
         plt.plot(self.t, acc)
@@ -100,12 +128,12 @@ class spring_damp_mass():
     def actual_graph(self):
         z = self.actual_values()
         disp = z[:, 0]
-        vel = z[:, 1]
-        acc = z[:, 2]
+        vel = z[:, 1] 
+        acc = self.actual_acc()
         plt.plot(self.t, disp)
         plt.plot(self.t, vel)
         plt.plot(self.t, acc)
-        plt.title('Spring_damper_system')
+        plt.title('Actual_Spring_damper_system')
         plt.xlabel("TIME")
         plt.ylabel('actual_disp_vel_acc')
         plt.legend(["actual_disp", "actual_vel", "actual_acc"])
@@ -113,15 +141,22 @@ class spring_damp_mass():
         plt.show()
     
     def actual_values_csv(self):
-        z = self.actual_values() 
-        #columns = ['time_step', 'force', 'mass', 'K', 'B', 'actual_disp', 'actual_vel', 'actual_acc']
+        z = self.actual_values()
+        acc = self.actual_acc()
+        error = self.error_equation() 
         D = {"time_step" : self.t,
                 "force" : self.force_array,
                 "mass" : self.mass,
                 "K" : self.k,
                 "B" : self.b,
+                "delta_mass" : self.delta_mass,
+                "delta_K" : self.delta_K,
+                "delta_B" : self.delta_B,
                 "actual_disp" : z[:,0],
                 "actual_vel" : z[:,1],
-                "actual_acc" : z[:,2]}
-        df = pd.DataFrame(D, index=None)
-        return df
+                "actual_acc" : acc,
+                "G(x)" : error
+                }
+                
+        df = pd.DataFrame(D)
+        return df  
