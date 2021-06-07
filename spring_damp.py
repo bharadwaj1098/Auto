@@ -67,7 +67,7 @@ class spring_damp_mass():
         z = self.ideal_values()
         for i in range(len(self.t)):
             t = self.t[i] 
-            acc = (i/self.mass) * ( self.force_time(t) - (self.b*z[i,1]) - (self.k * z[i,0]) ) 
+            acc = (1/self.mass) * ( self.force_time(t) - (self.b*z[i,1]) - (self.k * z[i,0]) ) 
             ideal_acc_list.append(acc)
         return ideal_acc_list
 
@@ -85,7 +85,7 @@ class spring_damp_mass():
         z = self.actual_values()
         for i in range(len(self.t)):
             t = self.t[i] 
-            acc = (i/self.actual_mass) * ( self.force_time(t) - (self.actual_b*z[i,1]) - (self.actual_k*z[i,0]) ) 
+            acc = (1/self.actual_mass) * ( self.force_time(t) - (self.actual_b*z[i,1]) - (self.actual_k*z[i,0]) ) 
             actual_acc_list.append(acc)
         return actual_acc_list
     
@@ -141,10 +141,14 @@ class spring_damp_mass():
         plt.show()
     
     def actual_values_csv(self):
-        z = self.actual_values()
-        acc = self.actual_acc()
+        actual_z = self.actual_values()
+        ideal_z = self.ideal_values()
+        ideal_acc = self.ideal_acc()
+        actual_acc = self.actual_acc()
         error = self.error_equation() 
         D = {"time_step" : self.t,
+                "Amplitude" : self.a,
+                "Angular_Vel" : self.omega,
                 "force" : self.force_array,
                 "mass" : self.mass,
                 "K" : self.k,
@@ -152,11 +156,15 @@ class spring_damp_mass():
                 "delta_mass" : self.delta_mass,
                 "delta_K" : self.delta_K,
                 "delta_B" : self.delta_B,
-                "actual_disp" : z[:,0],
-                "actual_vel" : z[:,1],
-                "actual_acc" : acc,
+                "ideal_disp" : ideal_z[:,0],
+                "ideal_vel" : ideal_z[:,1],
+                "ideal_acc" : ideal_acc,
+                "actual_disp" : actual_z[:,0],
+                "actual_vel" : actual_z[:,1],
+                "actual_acc" : actual_acc,
                 "G(x)" : error
                 }
-                
+
         df = pd.DataFrame(D)
-        return df  
+        return df 
+        
