@@ -26,6 +26,7 @@ class spring_damp_mass():
         self.t = np.arange(0, time_in_sec+0.1, 0.1)  
 
     def force_time(self, x):
+        #equation to calculate force at a time step from the input equation
         t = Symbol('t')
         if self.force is not None:
             if self.omega and self.a is not None:
@@ -40,6 +41,7 @@ class spring_damp_mass():
             return 10
     
     def diff_force_time(self, x):
+        #equation to calculate the differentiation of force at a time step
         t = Symbol('t')
         if self.force is not None:
             if self.omega and self.a is not None:
@@ -54,15 +56,18 @@ class spring_damp_mass():
             return 10
 
     def ideal_diff(self, state, t):
+        #call-back function to the ideal_values
         dx1dt = state[1] 
         dx2dt =  (1/self.mass)*(self.force_time(t) - (self.b*state[1]) - (self.k * state[0]) )
         dxdt = [dx1dt, dx2dt ]
         return dxdt
 
     def ideal_values(self):
+        #function to solve the differential equations
         return odeint(self.ideal_diff, self.state_vec, self.t)
     
     def ideal_acc(self):
+        #function to calculate ideal acceleration at a time_step
         ideal_acc_list = []
         z = self.ideal_values()
         for i in range(len(self.t)):
@@ -72,15 +77,18 @@ class spring_damp_mass():
         return ideal_acc_list
 
     def actual_diff(self, state, t):
+        #callback function to calculate actual_values
         dx1dt = state[1] 
         dx2dt = (1/self.actual_mass)*(self.force_time(t) - (self.actual_b*state[1]) - (self.actual_k*state[0]) )
         dxdt = [dx1dt, dx2dt] 
         return dxdt
 
     def actual_values(self):
+        #function to solve the differentiation equations and give actual displacement and velocity 
         return odeint(self.actual_diff, self.state_vec, self.t)
     
     def actual_acc(self):
+        #function to calculate actual acceleration at a time_step
         actual_acc_list = []
         z = self.actual_values()
         for i in range(len(self.t)):
@@ -90,6 +98,7 @@ class spring_damp_mass():
         return actual_acc_list
     
     def error_equation(self): 
+        # function to calculate G(x)
         z = self.actual_values()
         z1 = list(z[:,0])
         z2 = list(z[:,1])
@@ -101,6 +110,7 @@ class spring_damp_mass():
         return error 
     
     def force_graph(self):
+        #plots the force_time graph
         for i in range(len(self.t)):
             self.force_list.append(self.force_time(self.t[i]))
         self.force_array = np.array(self.force_list)
@@ -111,6 +121,7 @@ class spring_damp_mass():
         plt.show()
     
     def ideal_graph(self):
+        #plots the graph of ideal values
         z = self.ideal_values()
         disp = z[:, 0]
         vel = z[:, 1]
@@ -126,6 +137,7 @@ class spring_damp_mass():
         plt.show()
     
     def actual_graph(self):
+        #plots the graph of actual values
         z = self.actual_values()
         disp = z[:, 0]
         vel = z[:, 1] 
@@ -141,6 +153,7 @@ class spring_damp_mass():
         plt.show()
     
     def actual_values_csv(self):
+        #actual values dataframe
         actual_z = self.actual_values()
         ideal_z = self.ideal_values()
         ideal_acc = self.ideal_acc()
@@ -167,4 +180,3 @@ class spring_damp_mass():
 
         df = pd.DataFrame(D)
         return df 
-        
