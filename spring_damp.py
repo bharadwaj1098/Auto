@@ -7,7 +7,7 @@ from sympy import *
 import matplotlib.pyplot as plt
 random.seed(49)
 
-class force_time():
+class force_time:
     def __init__(self, * ,time, increment,state,force= None, amplitude=None, omega=None):
         self.state=state
         self.increment = increment
@@ -71,9 +71,9 @@ class ideal_actual(mass_damp_spring):
         self.delta_mass = delta_mass  
         self.delta_spring = delta_spring 
         self.delta_damp = delta_damp  
-        self.ideal_values_list = self.ideal_values() 
+        self.ideal_values_list = odeint(self.ideal_diff, self.state, self.time_array) 
         self.ideal_acc_list = self.ideal_acc()
-        self.actual_values_list = self.actual_values()
+        self.actual_values_list = odeint(self.actual_diff, self.state, self.time_array) 
         self.actual_acc_list = self.actual_acc()
         self.error_list = self.error()
 
@@ -95,13 +95,6 @@ class ideal_actual(mass_damp_spring):
         dx2dt = m * (f - b - k) 
         dxdt = [dx1dt, dx2dt] 
         return dxdt  
-
-    def ideal_values(self):
-        #function to solve the differential equations
-        return odeint(self.ideal_diff, self.state, self.time_array)
-    
-    def actual_values(self):
-        return odeint(self.actual_diff, self.state, self.time_array)
 
     def ideal_acc(self):
         #function to calculate ideal acceleration at a time_step
@@ -131,10 +124,9 @@ class ideal_actual(mass_damp_spring):
         z = self.actual_values_list
         z1 = list(z[:,0])
         z2 = list(z[:,1])
-        z3 = self.actual_acc()
         error = []
         for i in range(len(self.time_array)):
-            e = (self.delta_mass * z3[i]) + (self.delta_damp * z2[i]) + (self.delta_spring * z1[i])
+            e =  (-1)* (1/(self.mass[i]+self.delta_mass)) * ( (self.delta_damp * z2[i]) + (self.delta_spring * z1[i]) ) 
             error.append(e) 
         return error
 
