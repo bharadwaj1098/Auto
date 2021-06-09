@@ -1,29 +1,108 @@
 import numpy as np
 from scipy.integrate import odeint
 import pandas as pd
+import random
+from random import randint 
 from sympy import *
 import matplotlib.pyplot as plt
+random.seed(49)
 
-class spring_damp_mass():
+class force_time:
+    def __init__(self, time, increment,state,force= None, amplitude=None, omega=None):
+        self.state=state
+        self.increment = increment
+        self.product = 1 / (self.increment)
+        self.time_array = np.arange(0, time + self.increment, self.increment)
+        self.force = force
+        self.amplitude = amplitude 
+        self.omega = omega
+        self.force_list = self._force_list()
+
+    def _force_list(self):
+        _list = []
+        for i in self.time_array:
+            _list.append(self._force_time(i))
+        return _list
+
+    def _force_time(self, x):
+        t = Symbol('t')
+        if self.force is not None:
+            if self.omega and self.a is not None:
+                f =  ((self.a) * ( self.force(self.omega * t) ) )
+                f = lambdify(t, f)
+                return f(x)
+            else:
+                f = self.force(t)
+                f = lambdify(t, f) 
+                return f(x)
+        else:
+            return 10
+
+class mass_damp_spring(force_time):
+    def __init__(self, no_mass, range_mass, no_spring, range_spring, no_damp, range_damp, **kwargs): 
+        super().__init__(**kwargs)
+        self.mass = self._item_time(no_mass, range_mass)
+        self.spring = self._item_time(no_spring, range_spring)
+        self.damp = self._item_time(no_damp, range_damp)
+
+    def _item_time(self, _no, _range):
+        _len = len(self.time_array)
+        _time_to_last = [0] * _no
+        _item = []
+        _final_item_list = []
+        k = 0
+        for i in range(_no):
+            _item.append(randint(_range[0], _range[1]))
+        for i in range(_len):
+            _time_to_last[randint(0, _len) % _no] += 1 
+        for i in _time_to_last:
+            for j in range(i):
+                _final_item_list.append(_item[k]) 
+            k += 1
+        return _final_item_list
+
+class ideal_actual(mass_damp_spring):
+    def __init__(self, delta_mass, delta_spring, delta_damp, **kwargs):
+        super().__init__(**kwargs)
+        self.delta_mass = delta_mass  
+        self.delta_spring = delta_spring 
+        self.delta_damp = delta_damp  
+        self.ideal_values_list = self.ideal_values() 
+        self.ideal_acc_list = self.ideal_acc()
+
+    def ideal_diff(self, state, t):
+        #call-back function to the ideal_values
+        dx1dt = state[1] 
+        T = t * self.product 
+        dx2dt =  (1/self.mass[T])*(self.force_list[T] - (self.damp[T]*state[1]) - (self.spring[T] * state[0]) )
+        dxdt = [dx1dt, dx2dt ]
+        return dxdt 
+
+    def ideal_values(self):
+        #function to solve the differential equations
+        return odeint(self.ideal_diff, self.state, self.time_array)
     
-    def __init__(self, state_vec, time_in_sec, mass,
-                 K, B, delta_mass, delta_K, delta_B,
-                 amplitude= None, omega= None,force = None):
-        self.k = K 
-        self.b = B
-        self.mass = mass
+    def ideal_acc(self):
+        #function to calculate ideal acceleration at a time_step
+        ideal_acc_list = []
+        z = self.ideal_values_list
+        for i in self.time_array:
+            T = self.product * i
+            acc = (1/self.mass[T])*(self.force_list[T] - (self.damp[T]*z[T, 1]) - (self.spring[T]*z[T,0]) )
+            ideal_acc_list.append(acc)
+        return ideal_acc_list
+
+class graphs(mass_damp_spring):
+    def __init__(self, delta_mass, delta_K, delta_B,**kwargs):
+        super().__init__(**kwargs) 
+   
         self.delta_mass = delta_mass
         self.delta_K = delta_K  
         self.delta_B = delta_B
         self.actual_mass = self.mass + delta_mass 
         self.actual_k = self.k + delta_K 
         self.actual_b = self.b + delta_B  
-        self.state_vec = state_vec
-        self.force_list = []
-        self.force = force
-        self.a = amplitude
-        self.omega = omega
-        self.t = np.arange(0, time_in_sec+0.1, 0.1)  
+        self.force_list = [] 
 
     def force_time(self, x):
         #equation to calculate force at a time step from the input equation
@@ -69,7 +148,7 @@ class spring_damp_mass():
     def ideal_acc(self):
         #function to calculate ideal acceleration at a time_step
         ideal_acc_list = []
-        z = self.ideal_values()
+        z = self.ideal
         for i in range(len(self.t)):
             t = self.t[i] 
             acc = (1/self.mass) * ( self.force_time(t) - (self.b*z[i,1]) - (self.k * z[i,0]) ) 
@@ -90,7 +169,7 @@ class spring_damp_mass():
     def actual_acc(self):
         #function to calculate actual acceleration at a time_step
         actual_acc_list = []
-        z = self.actual_values()
+        z = self.actual
         for i in range(len(self.t)):
             t = self.t[i] 
             acc = (1/self.actual_mass) * ( self.force_time(t) - (self.actual_b*z[i,1]) - (self.actual_k*z[i,0]) ) 
@@ -99,7 +178,7 @@ class spring_damp_mass():
     
     def error_equation(self): 
         # function to calculate G(x)
-        z = self.actual_values()
+        z = self.actual
         z1 = list(z[:,0])
         z2 = list(z[:,1])
         z3 = self.actual_acc()
@@ -122,7 +201,7 @@ class spring_damp_mass():
     
     def ideal_graph(self):
         #plots the graph of ideal values
-        z = self.ideal_values()
+        z = self.ideal
         disp = z[:, 0]
         vel = z[:, 1]
         acc = self.ideal_acc() 
@@ -138,7 +217,7 @@ class spring_damp_mass():
     
     def actual_graph(self):
         #plots the graph of actual values
-        z = self.actual_values()
+        z = self.actual
         disp = z[:, 0]
         vel = z[:, 1] 
         acc = self.actual_acc()
@@ -151,11 +230,48 @@ class spring_damp_mass():
         plt.legend(["actual_disp", "actual_vel", "actual_acc"])
         plt.grid()
         plt.show()
+
+    def compare_disp(self):
+        #plots to compare actual and ideal displacement
+        i = self.ideal
+        a = self.actual
+        actual_disp = a[:, 0]
+        ideal_disp = i[:, 0] 
+        plt.plot(self.t, actual_disp)
+        plt.plot(self.t, ideal_disp)
+        plt.title('actual_ideal_disp')
+        plt.legend(['actual_disp', 'ideal_disp'])
+        plt.grid()
+        plt.show()
+
+    def compare_vel(self):
+        #plots to compare actual and ideal displacement
+        i = self.ideal
+        a = self.actual
+        actual_vel = a[:, 1]
+        ideal_vel = i[:, 1] 
+        plt.plot(self.t, actual_vel)
+        plt.plot(self.t, ideal_vel)
+        plt.title('actual_ideal_velocity')
+        plt.legend(['actual_vel', 'ideal_vel'])
+        plt.grid()
+        plt.show()
     
+    def compare_acc(self):
+        #plots to compare actual and ideal acceleration
+        ideal_acc = self.ideal_acc()
+        actual_acc = self.actual_acc()  
+        plt.plot(self.t, actual_acc)
+        plt.plot(self.t, ideal_acc) 
+        plt.title('actual_ideal_acceleration')
+        plt.legend(['actual_acc', 'ideal_acc'])
+        plt.grid()
+        plt.show()
+
     def actual_values_csv(self):
         #actual values dataframe
-        actual_z = self.actual_values()
-        ideal_z = self.ideal_values()
+        actual_z = self.actual
+        ideal_z = self.ideal
         ideal_acc = self.ideal_acc()
         actual_acc = self.actual_acc()
         error = self.error_equation() 
@@ -165,7 +281,7 @@ class spring_damp_mass():
                 "force" : self.force_array,
                 "mass" : self.mass,
                 "K" : self.k,
-                "B" : self.b,
+                "B" : self.b, 
                 "delta_mass" : self.delta_mass,
                 "delta_K" : self.delta_K,
                 "delta_B" : self.delta_B,

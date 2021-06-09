@@ -1,16 +1,46 @@
 import torch 
-import torchvision
-import torchvision.utils 
 import torch.nn as nn 
 import torch.nn.functional as F
-import torchvision.transforms as T 
 import torch.optim as optim 
-torch.seed(0) 
+torch.manual_seed(10)
 
 import numpy as np
+import pandas as pd
 import warnings 
 warnings.filterwarnings("ignore") 
 import time 
 import random 
+import sklearn
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split 
+from sklearn.preprocessing import StandardScaler 
+from sklearn.pipeline import make_pipeline 
 
-from spring_damp import spring_damp_mass 
+from spring_damp import spring_damp_mass
+
+
+def linear():
+    df = pd.read_csv('trial.csv') 
+
+    imp_colums = ["time_step", "actual_disp", "actual_vel", "actual_acc", "G(x)"] 
+
+    for i in df.columns:
+        if i not in imp_colums:
+            df = df.drop([i], axis=1)
+    
+    output = df["G(x)"]
+    df = df.drop(["G(x)"], axis=1)
+
+    X_train, X_test, y_train, y_test = train_test_split(df, output, random_state=42)
+
+    pipe = make_pipeline(StandardScaler(), LinearRegression()) 
+    
+    pipe.fit(X_train, y_train)
+    z = pipe.score(X_test, y_test)
+    print(z) 
+
+if __name__ == "__main__":
+    linear()
+
+     
+
