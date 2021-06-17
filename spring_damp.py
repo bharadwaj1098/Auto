@@ -71,9 +71,9 @@ class ideal_actual(mass_damp_spring):
         self.delta_mass = delta_mass  
         self.delta_spring = delta_spring 
         self.delta_damp = delta_damp  
-        self.ideal_values_list = odeint(self.ideal_diff, self.state, self.time_array) 
+        self.ideal_values_list = odeint(self.ideal_diff, self.state, self.time_array, mxstep=50000000) 
         self.ideal_acc_list = self.ideal_acc()
-        self.actual_values_list = odeint(self.actual_diff, self.state, self.time_array) 
+        self.actual_values_list = odeint(self.actual_diff, self.state, self.time_array, mxstep=50000000) 
         self.actual_acc_list = self.actual_acc()
         self.error_list = self.error()
 
@@ -81,7 +81,9 @@ class ideal_actual(mass_damp_spring):
         #call-back function to the ideal_values
         dx1dt = state[1] 
         T = int(t * self.product )
-        dx2dt =  (1/self.mass[T])*(self.force_list[T] - (self.damp[T]*state[1]) - (self.spring[T] * state[0]) )
+        dx2dt =  (1/self.mass[T])*(self.force_list[T] - 
+                    (self.damp[T]*state[1]) - 
+                    (self.spring[T] * state[0]) )
         dxdt = [dx1dt, dx2dt ]
         return dxdt 
     
@@ -248,3 +250,4 @@ class graphs(ideal_actual):
 
         df = pd.DataFrame(D)
         return df 
+
