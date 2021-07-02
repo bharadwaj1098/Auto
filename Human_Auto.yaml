@@ -1,15 +1,17 @@
 ---
 time: 90
 state: [0, 0 , 0, 0]
-Theta_h: sin 
-Theta_a: -sin 
 sensor_spring: 1
 sw_mass: 5
+delta_B_H: 0.1
+delta_K_H: 0.5
+delta_B_A: 0.5
+delta_K_A: 0.03
 args_dict_h:
-  amplitude: 1
+  amplitude: 10
   omega: 0.1
   no_mass: 10
-  range_mass: [1, 30]
+  range_mass: [1, 10]
   no_spring: 50
   range_spring: [1, 14.99]
   no_damp: 50
@@ -18,11 +20,12 @@ args_dict_a:
   amplitude: 1
   omega: 0.1
   no_mass: 5
-  range_mass: [0.1, ]
+  range_mass: [1, 10]
   no_spring: 25
   range_spring: [0.1, 4.9]
   no_damp: 25
   range_damp: [0.1, 5.5]
 G: 1.5
-J_sm: [1, 1] 
+J_sm: [1, 1]
+T_v: 0 
 ...

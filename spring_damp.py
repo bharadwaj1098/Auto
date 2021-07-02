@@ -42,7 +42,7 @@ class mass_damp_spring(force_time):
     def __init__(self, *,no_mass, range_mass, no_spring, range_spring, no_damp, range_damp, uniform=None, **kwargs): 
         super().__init__(**kwargs)
         #self.uniform = uniform
-        self.mass = self._item_time(no_mass, range_mass, uniform)
+        self.mass = self._item_time(no_mass, range_mass, uniform=None)
         self.spring = self._item_time(no_spring, range_spring, uniform)
         self.damp = self._item_time(no_damp, range_damp, uniform)
 

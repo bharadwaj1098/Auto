@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.integrate import odeint
-import pandas as pd
 import random
 from random import randint 
 from sympy import *
@@ -8,7 +7,7 @@ from spring_damp import mass_damp_spring as mds
 import matplotlib.pyplot as plt
 random.seed(49)
 
-class haptic:
+class haptic_class:
     '''
     Input state_vector:-
     state[0] = Theta_sw disp
@@ -23,24 +22,25 @@ class haptic:
     J_sm[1] = J_m  
     '''
     theta_state= [0]
-    def __init__(self, time, state, Theta_h, Theta_a, sensor_spring, sw_mass, 
-    args_dict_h, args_dict_a, G, J_sm, T_v = 0):
-        self.time = time
-        self.sensor_spring = sensor_spring
-        self.sw_mass = sw_mass
-        self.state = state
-        self.Theta_h = Theta_h 
+    def __init__(self, dic, Theta_h, Theta_a):
+        self.dic = dic
+        self.time = dic['time']
+        self.sensor_spring = dic['sensor_spring']
+        self.sw_mass = dic['sw_mass']
+        self.state = dic['state']
+        self.Theta_h = Theta_h
         self.Theta_a = Theta_a
-        self.G = G 
-        self.T_v = T_v
-        self.J_sm = J_sm 
-        self.args_dict_h = args_dict_h
-        self.args_dict_a = args_dict_a
+        self.G = dic['G'] 
+        self.T_v = dic['T_v']
+        self.J_sm = dic['J_sm'] 
+        self.args_dict_h = dic['args_dict_h']
+        self.args_dict_a = dic['args_dict_a']
         self.Theta = self.Theta_dict() 
         self.diff_theta_h = self.Diff_theta(self.Theta_h, self.Theta['H_time'], self.args_dict_h['amplitude'], self.args_dict_h['omega'] )
         self.diff_theta_a = self.Diff_theta(self.Theta_a, self.Theta['A_time'], self.args_dict_a['amplitude'], self.args_dict_a['omega'] )
         self.flag = 1 if len(self.Theta['H_time']) == len(self.Theta['A_time']) else 0
-        self._vector = odeint(self.callback_func, self.state, self.Theta['H_time'], mxstep = 50000000)
+        self._vector = odeint(self.callback_func, self.state, self.Theta['H_time'], mxstep = 50000000) if self.flag==1 else [0,0,0,0]
+        self.acc_h, self.acc_a, self.error = self.auto_acc() 
 
     def Theta_dict(self):
         Theta = {}
@@ -70,7 +70,7 @@ class haptic:
 
         return Theta
 
-    def Diff_theta(self, Theta, t, a, w):
+    def Diff_theta(self, Theta, time_array, a, w):
         diff_theta = []
         t = Symbol('t')
         if a is not None and w is not None:
@@ -79,7 +79,7 @@ class haptic:
             y = Theta(t)
         dt = diff(y, t)
         ddt = lambdify(t, dt)
-        for i in t:
+        for i in time_array:
             diff_theta.append(ddt(i)) 
         return diff_theta 
 
@@ -87,7 +87,7 @@ class haptic:
         T_h = int(t * self.mds_h.product) 
         dx1dt = state[1] 
         b_h = self.Theta['H_Damp'][T_h] * (self.diff_theta_h[T_h] - state[1]) 
-        k_h = self.Theta['K_spring'][T_h] * (self.Theta['H'][T_h] - state[0]) 
+        k_h = self.Theta['H_spring'][T_h] * (self.Theta['H'][T_h] - state[0]) 
         K_t = self.sensor_spring * (state[0] - state[2]) 
         j1 = self.sw_mass + self.Theta['H_mass'][T_h] 
         dx2dt = (b_h + k_h - K_t) * (1/j1)
@@ -98,4 +98,29 @@ class haptic:
         dxdt = [dx1dt, dx2dt, dx3dt, dx4dt] 
         return dxdt 
 
-    
+    def auto_acc(self):
+        acc_h , acc_a, error = [], [], []
+        for i in self.Theta['A_time']:
+            T = int(i * self.mds_a.product)
+            b_h = self.Theta['H_Damp'][T] * (self.diff_theta_h[T] - self._vector[:,1][T] )
+            k_h = self.Theta['H_spring'][T] * (self.Theta['H'][T] - self._vector[:,0][T] ) 
+            K_t = self.sensor_spring * (self._vector[:,0][T] - self._vector[:,2][T] ) 
+            j1 = self.sw_mass + self.Theta['H_mass'][T]  
+            acc_h.append( (b_h + k_h - K_t) * (1/j1) )
+
+            b_a = self.G * self.Theta['A_Damp'][T] * (self.diff_theta_a[T] - (self.G * self._vector[:,3][T] ) )
+            k_a = self.G * self.Theta['A_spring'][T] * (self.Theta['A'][T] - (self.G * self._vector[:,2][T] ) ) 
+            deno = ( 1 / ( (self.G **2) * self.J_sm[1] + self.J_sm[0] ) ) 
+            num = (b_a + k_a + K_t + self.T_v) 
+            acc_a.append(num * deno) 
+
+            delta_b_h = self.dic['delta_B_H'] * (self.diff_theta_h[T] - self._vector[:,1][T] )
+            delta_k_h = self.dic['delta_K_H'] * (self.Theta['H'][T] - self._vector[:,0][T] ) 
+            a = (delta_b_h + delta_k_h) * (1/j1)
+
+            delta_b_a = self.G * self.dic['delta_B_A'] * (self.diff_theta_a[T] - (self.G * self._vector[:,3][T] ) ) 
+            delta_k_a = self.G * self.dic['delta_K_A'] * (self.Theta['A'][T] - (self.G * self._vector[:,2][T] ) )
+            b = (delta_b_a + delta_k_a) * deno  
+            error.append( [a, b] )
+
+        return acc_h, acc_a, np.asarray(error)
