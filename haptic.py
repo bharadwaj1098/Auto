@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from scipy.integrate import odeint
 import random
 from random import randint 
@@ -40,7 +41,7 @@ class haptic_class:
         self.diff_theta_a = self.Diff_theta(self.Theta_a, self.Theta['A_time'], self.args_dict_a['amplitude'], self.args_dict_a['omega'] )
         self.flag = 1 if len(self.Theta['H_time']) == len(self.Theta['A_time']) else 0
         self._vector = odeint(self.callback_func, self.state, self.Theta['H_time'], mxstep = 50000000) if self.flag==1 else [0,0,0,0]
-        self.acc_h, self.acc_a, self.error = self.auto_acc() 
+        self.acc_sw, self.acc_s, self.error = self.auto_acc() 
 
     def Theta_dict(self):
         Theta = {}
@@ -123,4 +124,29 @@ class haptic_class:
             b = (delta_b_a + delta_k_a) * deno  
             error.append( [a, b] )
 
-        return acc_h, acc_a, np.asarray(error)
+        return acc_h, acc_a, np.asarray(error) 
+
+    def dataframe(self):
+        D = {
+            'time_step_H' : self.Theta['H_time'],
+            'time_step_A' : self.Theta['A_time'],
+            'theta_H' : self.Theta['H'],
+            'theta_A' : self.Theta['A'],
+            'H_spring' : self.Theta['H_spring'],
+            'A_spring' : self.Theta['A_spring'],
+            'H_damp' : self.Theta['H_Damp'],
+            'A_damp' : self.Theta['A_Damp'],
+            'H_mass' : self.Theta['H_mass'],
+            'A_mass' : self.Theta['A_mass'],
+            'disp_sw': self._vector[:,0],
+            'disp_s': self._vector[:, 2],
+            'vel_sw': self._vector[:, 1],
+            'vel_s': self._vector[:, 3],
+            'acc_sw': self.acc_sw,
+            'acc_s': self.acc_s, 
+            'error_1': self.error[:, 0], 
+            'error_2': self.error[:, 1] 
+        }
+
+        df = pd.DataFrame(D)
+        return df
