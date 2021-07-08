@@ -1,5 +1,6 @@
 ---
 time: 90
+neg : True
 state: [0, 0 , 0, 0]
 sensor_spring: 1
 sw_mass: 5

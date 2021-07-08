@@ -62,9 +62,17 @@ class haptic_class:
         Theta['H_spring'] = self.mds_h.spring 
         Theta['H_Damp'] = self.mds_h.damp 
         Theta['H_time']  = self.mds_h.time_array
+        
+        if self.dic['neg'] == True:
+            Theta['A'] = []
+            for i in range(len(self.mds_a.force_list)):
+                Theta['A'].append( -1 * self.mds_a.force_list[i])  
+        else:
+            Theta['A'] = self.mds_a.mass
 
-        Theta['A'] = self.mds_a.force_list 
-        Theta['A_mass'] = self.mds_a.mass 
+        Theta['A_mass'] = self.mds_a.mass
+
+
         Theta['A_spring'] = self.mds_a.spring 
         Theta['A_Damp'] = self.mds_a.damp
         Theta['A_time']  = self.mds_a.time_array
