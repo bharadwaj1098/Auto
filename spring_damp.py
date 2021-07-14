@@ -39,14 +39,18 @@ class force_time:
             return 10
 
 class mass_damp_spring(force_time):
-    def __init__(self, *,no_mass, range_mass, no_spring, range_spring, no_damp, range_damp, uniform=None, **kwargs): 
+    def __init__(self, *,no_mass, range_mass, no_spring, range_spring, no_damp, range_damp, uniform=None,**kwargs): 
         super().__init__(**kwargs)
-        #self.uniform = uniform
-        self.mass = self._item_time(no_mass, range_mass, uniform=None)
-        self.spring = self._item_time(no_spring, range_spring, uniform)
-        self.damp = self._item_time(no_damp, range_damp, uniform)
+        self.mass = self._item_time(no_mass, range_mass, uniform=1)
+        self.spring = self._item_time(no_spring, range_spring, uniform=1 )
+        self.damp = self._item_time(no_damp, range_damp, uniform=1)
 
     def _item_time(self, _no, _range, uniform):
+        '''
+        uniform = 1 mean the random numbers generated are decimal and 
+        input for range should be or can be in decimal as well [0.01, 0.1]
+        
+        '''
         _len = len(self.time_array)
         _time_to_last = [0] * _no
         _item = []
@@ -63,6 +67,7 @@ class mass_damp_spring(force_time):
             for j in range(i):
                 _final_item_list.append(_item[k]) 
             k += 1
+
         return _final_item_list
 
 class ideal_actual(mass_damp_spring):
