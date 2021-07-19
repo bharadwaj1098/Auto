@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 from scipy.integrate import odeint
 import random
-from random import randint 
+from random import randint
+from pdb import set_trace  
 from sympy import *
 from spring_damp import mass_damp_spring as mds
 import matplotlib.pyplot as plt
@@ -248,7 +249,10 @@ class haptic_actual:
                 dxdt = [dx1dt, dx2dt, dx3dt, dx4dt] 
                 return dxdt 
 
-            Human_vector = odeint(callback_func, self.dic['state'], self.time_array, mxstep = 50000000)
+            Human_vector = odeint(callback_func, \
+                self.dic['state'], \
+                    self.time_array, \
+                        mxstep = 50000000)
 
             def auto_acc():
                 acc_h , acc_a, error = [], [], []

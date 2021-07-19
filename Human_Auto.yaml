@@ -2,7 +2,7 @@
 time: 90
 increment : 0.01 
 neg : True
-number_of_runs : 10
+number_of_runs : 1
 state: [0, 0 , 0, 0]
 sensor_spring: 1
 sw_mass: 5
