@@ -130,7 +130,6 @@ class haptic_class:
             delta_k_a = self.G * self.dic['delta_K_A'] * (self.Theta['A'][T] - (self.G * self._vector[:,2][T] ) )
             b = (delta_b_a + delta_k_a) * deno  
             error.append( [a, b] )
-
         return acc_h, acc_a, np.asarray(error) 
 
     def dataframe(self):
@@ -258,7 +257,7 @@ class haptic_actual:
                 acc_h , acc_a, error = [], [], []
                 for i in Theta['H_time']:
                     T = int(i * mds_h.product)
-                    b_h = Theta['H_Damp'][T] * (Theta['H_Theta'] - Human_vector[:,1][T] )
+                    b_h = Theta['H_Damp'][T] * (Theta['H_Theta'][T] - Human_vector[:,1][T] )
                     k_h = Theta['H_spring'][T] * (Theta['H_Theta'][T] - Human_vector[:,0][T] ) 
                     K_t = self.dic['sensor_spring'] * (Human_vector[:,0][T] - Human_vector[:,2][T] ) 
                     j1 = self.dic['sw_mass'] + Theta['H_mass'][T]  
