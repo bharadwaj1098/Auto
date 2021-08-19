@@ -27,14 +27,14 @@ class haptic_class:
     def __init__(self, dic, Theta_h, Theta_a):
         self.dic = dic
         self.time = dic['time']
-        self.sensor_spring = dic['sensor_spring']
+        self.sensor_spring = dic['sensor_spring'] #K_T
         self.sw_mass = dic['sw_mass']
         self.state = dic['state']
         self.Theta_h = Theta_h
         self.Theta_a = Theta_a
-        self.G = dic['G'] 
+        self.G = dic['G'] # r_s/r_m
         self.T_v = dic['T_v']
-        self.J_sm = dic['J_sm'] 
+        self.J_sm = dic['J_sm'] #[j_s, j_m]
         self.args_dict_h = dic['args_dict_h']
         self.args_dict_a = dic['args_dict_a']
         self.Theta = self.Theta_dict() 
@@ -69,7 +69,7 @@ class haptic_class:
             for i in range(len(self.mds_a.force_list)):
                 Theta['A'].append( -1 * self.mds_a.force_list[i])  
         else:
-            Theta['A'] = self.mds_a.mass
+            Theta['A'] = self.mds_a.force_list
 
         Theta['A_mass'] = self.mds_a.mass
         Theta['A_spring'] = self.mds_a.spring 
@@ -122,12 +122,19 @@ class haptic_class:
             num = (b_a + k_a + K_t + self.T_v) 
             acc_a.append(num * deno) 
 
-            delta_b_h = self.dic['delta_B_H'] * (self.diff_theta_h[T] - self._vector[:,1][T] )
-            delta_k_h = self.dic['delta_K_H'] * (self.Theta['H'][T] - self._vector[:,0][T] ) 
-            a = (delta_b_h + delta_k_h) * (1/j1)
+            if self.dic['non_linear'] != 'yes': 
+                delta_k_h = self.dic['delta_K_H'] * (self.Theta['H'][T] - self._vector[:,0][T] )
+                delta_k_a = self.G * self.dic['delta_K_A'] * (self.Theta['A'][T] - (self.G * self._vector[:,2][T] ) )
 
-            delta_b_a = self.G * self.dic['delta_B_A'] * (self.diff_theta_a[T] - (self.G * self._vector[:,3][T] ) ) 
-            delta_k_a = self.G * self.dic['delta_K_A'] * (self.Theta['A'][T] - (self.G * self._vector[:,2][T] ) )
+            elif self.dic['non_linear'] == 'yes':
+                 delta_k_h = ((self.Theta['H_spring'][T] ** 3) - self.Theta['H_spring'][T] ) * (self.Theta['H'][T] - self._vector[:,0][T] ) 
+                 delta_k_a = self.G * ((self.Theta['A_spring'][T] ** 3) - self.Theta['A_spring'][T] ) \
+                      * (self.Theta['A'][T] - (self.G * self._vector[:,2][T] ) )
+
+            delta_b_h = self.dic['delta_B_H'] * (self.diff_theta_h[T] - self._vector[:,1][T] )
+            delta_b_a = self.G * self.dic['delta_B_A'] * (self.diff_theta_a[T] - (self.G * self._vector[:,3][T] ) )
+
+            a = (delta_b_h + delta_k_h) * (1/j1)
             b = (delta_b_a + delta_k_a) * deno  
             error.append( [a, b] )
         return acc_h, acc_a, np.asarray(error) 
