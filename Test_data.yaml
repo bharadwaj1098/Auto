@@ -1,0 +1,36 @@
+---
+time: 90
+test: 'yes'
+increment : 0.01 
+neg : False
+number_of_runs : 1
+non_linear: 'yes'
+state: [0, 0 , 0, 0]
+sensor_spring: 1
+sw_mass: 5
+delta_B_H: 0.05
+delta_K_H: 2
+delta_B_A: 0.05
+delta_K_A: 2
+args_dict_h:
+  no_mass: 1
+  range_mass: [0.005, 0.01]
+  no_spring: 1
+  range_spring: [1, 10] 
+  no_damp: 1
+  range_damp: [0.1, 0.2]
+  amplitude: 1
+  omega: 0.1
+args_dict_a: 
+  no_mass: 1
+  range_mass: [0.005, 0.01]
+  no_spring: 1
+  range_spring: [1, 10]
+  no_damp: 1
+  range_damp: [0.1, 0.2]
+  amplitude: 1
+  omega: 0.1
+G: 1.5
+J_sm: [1, 1]
+T_v: 0 
+... 
